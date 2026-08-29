@@ -15,7 +15,7 @@
  * worker again and drop the previous cache.
  */
 
-const VERSION = 'lisan-v3';
+const VERSION = 'lisan-v4';
 
 const SHELL = [
   './',
