@@ -34,6 +34,11 @@ narration, and your API key is stored only in your own browser.
   15s back / 30s forward, and resume-where-you-left-off.
 - **Exports.** Save a single chapter or the whole book as a zip — on iOS this opens the
   share sheet so you can drop it into Files, Books or AirDrop it.
+- **Narrate only what you need.** Convert a single chapter, a hand-picked selection, or the
+  whole book — and come back for the rest whenever you like.
+- **Change your mind about the voice.** Heard a chapter and want a different narrator? Open
+  the book, tap **Change**, preview the alternatives, and it re-narrates the whole thing
+  consistently.
 
 ---
 
@@ -127,15 +132,28 @@ calmement, comme un narrateur de livre audio."*
 
 1. **Add book** → choose a file. On iPhone the picker opens Files, so an EPUB in iCloud
    Drive, Dropbox or Google Drive works directly.
-2. Check the chapter list. Untick the copyright page, the index, the acknowledgements —
-   anything you'd rather not sit through. Tap a title to rename it.
+2. Check the chapter list. Untick anything you don't want narrated right now. Nothing is
+   thrown away — unticked chapters stay in the book and can be narrated later. Tap a title
+   to rename it.
 3. Check the estimate, then **Convert**.
 4. **Leave the app open on this screen while it converts.** iOS suspends background tabs, and
    a suspended tab stops making requests. The app asks iOS to keep the screen awake, but it
    can't work while you're in another app. A 10-hour book takes roughly 20–40 minutes.
 
-If it's interrupted, reopen the book and tap **Continue converting** — finished chapters and
+If it's interrupted, reopen the book and tap **Narrate all remaining** — finished chapters and
 partial chunks are kept, so you only pay for what's left.
+
+### Narrating part of a book
+
+You rarely need a whole book at once. On the book page:
+
+- **One chapter** — tap the ∿ button on its row. That chapter alone is narrated.
+- **A few chapters** — **Choose chapters…**, tick what you want, and the sheet shows the
+  length and cost of exactly that selection before you commit.
+- **Everything left** — **Narrate all remaining**.
+
+Playback steps over chapters that aren't narrated yet, so a partly-converted book still plays
+straight through what you have instead of stopping at the first gap.
 
 ---
 
@@ -170,8 +188,14 @@ The estimate tells you how much would spill over; converting some chapters now a
 after the 1st costs nothing, since partial progress is kept.
 
 **Switching engines mid-book.** Each book remembers the engine, model, voice and language it
-was started with, so continuing a half-converted book never mixes two narrators. To re-narrate
-a book with a different voice, remove it and import it again.
+was started with, so continuing a half-converted book never mixes two narrators — changing the
+narrator in Settings affects the *next* book you import, not one already under way.
+
+**To change the narrator of an existing book**, open it and use **Change** next to "Narrated
+by". You can pick a different voice, model or language, preview it first, and the book is then
+regenerated from scratch with the new voice. The dialog tells you how many characters that
+costs before you commit. Existing audio is replaced rather than mixed, so the book never ends
+up with two narrators.
 
 ---
 
