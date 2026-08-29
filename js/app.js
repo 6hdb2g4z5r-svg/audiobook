@@ -269,15 +269,29 @@ async function renderBook() {
   const bytes = ready.reduce((n, c) => n + (c.audioSize || 0), 0);
   const art = coverUrl(book);
 
+  const bookProvider = book.provider || state.settings.provider;
+  const bookModel = modelOf(bookProvider, book.model || state.settings.models[bookProvider]);
+  const busy = !!state.conversion;
+
   $('#book-head').innerHTML = `
-    <div class="card row" style="align-items:flex-start;gap:16px">
-      ${art ? `<img class="cover" style="width:76px;height:108px" src="${art}" alt="">` : `<div class="cover" style="width:76px;height:108px">${esc((book.title || '?')[0].toUpperCase())}</div>`}
-      <div class="grow">
-        <h2 style="font-size:18px;line-height:1.25">${esc(book.title)}</h2>
-        <div class="small muted" style="margin:4px 0 10px">${esc(book.author || 'Unknown author')}</div>
-        <div class="tiny muted">${chapters.length} chapters · ${secs ? formatDuration(secs) + ' · ' : ''}${formatBytes(bytes)}</div>
+    <div class="card">
+      <div class="row" style="align-items:flex-start;gap:16px">
+        ${art ? `<img class="cover" style="width:76px;height:108px" src="${art}" alt="">` : `<div class="cover" style="width:76px;height:108px">${esc((book.title || '?')[0].toUpperCase())}</div>`}
+        <div class="grow">
+          <h2 style="font-size:18px;line-height:1.25">${esc(book.title)}</h2>
+          <div class="small muted" style="margin:4px 0 10px">${esc(book.author || 'Unknown author')}</div>
+          <div class="tiny muted">${chapters.length} chapters · ${secs ? formatDuration(secs) + ' · ' : ''}${formatBytes(bytes)}</div>
+        </div>
+      </div>
+      <div class="spread" style="margin-top:14px;padding-top:13px;border-top:1px solid var(--line-soft)">
+        <div class="grow" style="min-width:0">
+          <div class="tiny muted">Narrated by</div>
+          <div class="small truncate" style="font-weight:550">${esc(voiceLabel(book))}</div>
+        </div>
+        <button class="btn sm ghost" id="btn-change-voice" ${busy ? 'disabled' : ''}>Change</button>
       </div>
     </div>`;
+  $('#btn-change-voice').addEventListener('click', changeNarrator);
 
   const conv = $('#book-convert');
   if (state.conversion && state.conversion.book.id === book.id) {
@@ -293,8 +307,8 @@ async function renderBook() {
     $('#btn-stop-conv').addEventListener('click', () => state.conversion.cancel());
   } else if (pendingCh.length) {
     const chars = pendingCh.reduce((n, c) => n + c.text.length, 0);
-    const prov = book.provider || state.settings.provider;
-    const mdl = modelOf(prov, book.model || state.settings.models[prov]);
+    const prov = bookProvider;
+    const mdl = bookModel;
     const est = estimate(chars, prov, mdl.id, await getUsage(prov, mdl.id));
     const remainingCost =
       est.cost < 0.005 ? ' · free within this month’s allowance' : ` · about $${est.cost.toFixed(2)}`;
@@ -354,6 +368,154 @@ async function renderBook() {
 
   $('#btn-download-all').classList.toggle('hidden', !ready.length);
 }
+
+/** "Aoede — Breezy, F · Chirp 3 HD · French (France)" */
+function voiceLabel(book) {
+  const provider = book.provider || state.settings.provider;
+  const model = modelOf(provider, book.model || state.settings.models[provider]);
+  const raw = book.voice || state.settings.voices[provider] || '—';
+  // Google voice ids look like fr-FR-Chirp3-HD-Aoede; OpenAI ids are bare words.
+  const leaf = raw.includes('-') ? raw.split('-').pop() : raw;
+  const name = leaf.charAt(0).toUpperCase() + leaf.slice(1);
+  const lang = book.voiceLang
+    ? (GOOGLE_LANGUAGES.find((l) => l.code === book.voiceLang)?.label || book.voiceLang)
+    : '';
+  return [name, model.name, lang].filter(Boolean).join(' · ');
+}
+
+/**
+ * Re-narrate a book with a different voice. Existing audio is replaced rather
+ * than mixed, so a book never ends up with two narrators partway through.
+ */
+async function changeNarrator() {
+  const book = state.book;
+  if (state.conversion) return toast('Pause the conversion first.');
+
+  const provider = book.provider || state.settings.provider;
+  const p = providerOf(provider);
+  const apiKey = state.settings.keys[provider] || '';
+  const currentModel = book.model || state.settings.models[provider];
+  const currentLang = book.voiceLang || state.settings.lang;
+
+  const panel = modal(`<h3>Change narrator</h3>
+    <p class="small muted" style="margin:6px 0 0">Everything already narrated will be generated again with the new voice, so the whole book stays consistent.</p>
+    <div id="cv-body" style="margin-top:16px"><div class="row"><div class="spinner"></div><span class="small muted">Loading voices…</span></div></div>`);
+
+  const buildBody = async (lang, modelId) => {
+    let voices = [];
+    let error = '';
+    try {
+      voices = await listVoices(provider, { apiKey, model: modelId, lang });
+    } catch (e) {
+      error = e.message;
+    }
+    const model = modelOf(provider, modelId);
+    const chars = state.chapters.reduce((n, c) => n + c.text.length, 0);
+    const est = estimate(chars, provider, modelId, await getUsage(provider, modelId));
+    const price =
+      est.cost < 0.005
+        ? 'Covered by this month’s free allowance.'
+        : `This would cost about $${est.cost.toFixed(2)} beyond your free allowance.`;
+
+    $('#cv-body').innerHTML = `
+      ${
+        p.needsLanguage
+          ? `<label class="field"><span>Language</span><select id="cv-lang">${GOOGLE_LANGUAGES.map(
+              (l) => `<option value="${l.code}" ${l.code === lang ? 'selected' : ''}>${l.label}</option>`
+            ).join('')}</select></label>`
+          : ''
+      }
+      <label class="field"><span>Model</span><select id="cv-model">${p.models
+        .map((m) => `<option value="${m.id}" ${m.id === modelId ? 'selected' : ''}>${m.name}</option>`)
+        .join('')}</select></label>
+      <label class="field"><span>Narrator</span><select id="cv-voice">${
+        voices.length
+          ? voices
+              .map(
+                (v) =>
+                  `<option value="${esc(v.id)}" ${v.id === book.voice ? 'selected' : ''}>${esc(v.name)}${
+                    v.desc ? ' — ' + esc(v.desc) : ''
+                  }</option>`
+              )
+              .join('')
+          : '<option value="">—</option>'
+      }</select>${error ? `<div class="hint" style="color:var(--bad)">${esc(error)}</div>` : ''}</label>
+      <div class="row" style="gap:10px;margin-bottom:14px">
+        <button class="btn sm ghost" id="cv-preview">Preview</button>
+        <span class="small muted" id="cv-preview-status"></span>
+      </div>
+      <div class="hint" style="margin-bottom:16px">Re-narrating ${state.chapters.length} chapters, ${chars.toLocaleString()} characters. ${price}</div>
+      <div class="stack">
+        <button class="btn primary block" id="cv-go" ${voices.length ? '' : 'disabled'}>Re-narrate this book</button>
+        <button class="btn ghost block" id="cv-cancel">Cancel</button>
+      </div>`;
+
+    const reload = async () => {
+      const l = p.needsLanguage ? $('#cv-lang').value : lang;
+      await buildBody(l, $('#cv-model').value);
+    };
+    $('#cv-model').addEventListener('change', reload);
+    if (p.needsLanguage) $('#cv-lang').addEventListener('change', reload);
+    $('#cv-cancel').addEventListener('click', closeModal);
+
+    $('#cv-preview').addEventListener('click', async () => {
+      const status = $('#cv-preview-status');
+      status.textContent = 'Generating…';
+      try {
+        const sample = SAMPLE_LINES[lang] || SAMPLE_LINES.default;
+        const blob = await synthesize(sample, {
+          provider,
+          apiKey,
+          model: modelId,
+          voice: $('#cv-voice').value,
+          lang,
+          instructions: state.settings.instructions,
+          speed: Number(state.settings.ttsSpeed) || 1,
+        });
+        const url = URL.createObjectURL(blob);
+        const a = new Audio(url);
+        a.play();
+        a.addEventListener('ended', () => URL.revokeObjectURL(url));
+        status.textContent = '';
+        await addUsage(provider, modelId, sample.length);
+      } catch (e) {
+        status.textContent = e.message;
+      }
+    });
+
+    $('#cv-go').addEventListener('click', async () => {
+      const chosen = {
+        voice: $('#cv-voice').value,
+        model: $('#cv-model').value,
+        lang: p.needsLanguage ? $('#cv-lang').value : book.voiceLang || '',
+      };
+      closeModal();
+      if (player.book?.id === book.id) {
+        player.pause();
+        $('#mini').classList.remove('up');
+        player.book = null;
+      }
+      const updated = { ...book, provider, voice: chosen.voice, model: chosen.model, voiceLang: chosen.lang };
+      await DB.putBook(updated);
+      await DB.deleteAudioOf(book.id); // wipes audio + cached chunks, resets chapters
+      state.book = updated;
+      state.chapters = await DB.chaptersOf(book.id);
+      await refreshLibrary();
+      await renderBook();
+      startConversion(updated, state.chapters);
+    });
+  };
+
+  await buildBody(currentLang, currentModel);
+  void panel;
+}
+
+const SAMPLE_LINES = {
+  default: 'Chapter one. The morning light came in sideways through the shutters, and for a long moment nobody moved.',
+  'fr-FR': 'Chapitre un. La lumière du matin entrait de biais par les volets, et pendant un long moment, personne ne bougea.',
+  'fr-CA': 'Chapitre un. La lumière du matin entrait de biais par les volets, et pendant un long moment, personne ne bougea.',
+  'es-ES': 'Capítulo uno. La luz de la mañana entraba de lado por las contraventanas, y durante un largo instante nadie se movió.',
+};
 
 $('#btn-delete-book').addEventListener('click', () => {
   const book = state.book;
@@ -1142,12 +1304,6 @@ function bindSettings() {
     }
   });
 
-  const SAMPLES = {
-    'fr-FR': 'Chapitre un. La lumière du matin entrait de biais par les volets, et pendant un long moment, personne ne bougea.',
-    'fr-CA': 'Chapitre un. La lumière du matin entrait de biais par les volets, et pendant un long moment, personne ne bougea.',
-    'es-ES': 'Capítulo uno. La luz de la mañana entraba de lado por las contraventanas, y durante un largo instante nadie se movió.',
-  };
-
   $('#btn-preview-voice').addEventListener('click', async () => {
     const status = $('#preview-status');
     const opts = engine();
@@ -1155,9 +1311,7 @@ function bindSettings() {
     if (!opts.voice) return (status.textContent = 'Pick a narrator first.');
     status.textContent = 'Generating…';
     try {
-      const sample =
-        SAMPLES[opts.lang] ||
-        'Chapter one. The morning light came in sideways through the shutters, and for a long moment nobody moved.';
+      const sample = SAMPLE_LINES[opts.lang] || SAMPLE_LINES.default;
       const blob = await synthesize(sample, opts);
       const url = URL.createObjectURL(blob);
       const a = new Audio(url);
