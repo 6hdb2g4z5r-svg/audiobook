@@ -130,13 +130,27 @@ export class Player extends EventTarget {
     this.emit('state');
   }
 
+  /**
+   * Index of the next/previous chapter that actually has audio. Unconverted
+   * chapters are stepped over rather than stopping playback dead — you can
+   * narrate a book in pieces and still listen straight through what you have.
+   */
+  findReady(from, step) {
+    for (let i = from; i >= 0 && i < this.chapters.length; i += step) {
+      if (this.chapters[i]?.status === 'ready') return i;
+    }
+    return -1;
+  }
+
   async next(auto = false) {
-    if (this.index + 1 < this.chapters.length) {
-      const nextChapter = this.chapters[this.index + 1];
-      if (nextChapter.status === 'ready') {
-        await this.load(this.book, this.chapters, this.index + 1, { autoplay: true });
-        return;
+    const i = this.findReady(this.index + 1, 1);
+    if (i !== -1) {
+      const skipped = i - this.index - 1;
+      await this.load(this.book, this.chapters, i, { autoplay: true });
+      if (skipped > 0) {
+        this.emit('skipped', { count: skipped });
       }
+      return;
     }
     if (auto) {
       this.emit('finished');
@@ -146,7 +160,8 @@ export class Player extends EventTarget {
 
   async prev() {
     if (this.audio.currentTime > 5) return this.seek(0);
-    if (this.index > 0) await this.load(this.book, this.chapters, this.index - 1, { autoplay: true });
+    const i = this.findReady(this.index - 1, -1);
+    if (i !== -1) await this.load(this.book, this.chapters, i, { autoplay: true });
   }
 
   savePosition(seconds = null, finished = false) {
