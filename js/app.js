@@ -318,9 +318,15 @@ async function renderBook() {
           <div><b>${pendingCh.length} chapter${pendingCh.length > 1 ? 's' : ''} still to narrate</b>
           <div class="tiny muted" style="margin-top:3px">≈ ${Math.round(estimateMinutes(chars))} min of audio${remainingCost}</div></div>
         </div>
-        <button class="btn primary block" id="btn-resume-conv">${ready.length ? 'Continue converting' : 'Convert to audiobook'}</button>
+        <div class="stack">
+          <button class="btn primary block" id="btn-resume-conv">${
+            ready.length ? `Narrate all ${pendingCh.length} remaining` : 'Convert the whole book'
+          }</button>
+          <button class="btn ghost block" id="btn-pick-chapters">Choose chapters…</button>
+        </div>
       </div>`;
-    $('#btn-resume-conv').addEventListener('click', () => startConversion(book, chapters));
+    $('#btn-resume-conv').addEventListener('click', () => startConversion(book, pendingCh));
+    $('#btn-pick-chapters').addEventListener('click', pickChapters);
   } else {
     conv.innerHTML = '';
   }
@@ -362,11 +368,103 @@ async function renderBook() {
       });
       row.append(dl, pl);
       row.addEventListener('click', () => playChapter(i));
+    } else if (c.status !== 'converting' && !state.conversion) {
+      // One tap to narrate just this chapter — the common case when you only
+      // want one part of a long book.
+      const go = el('button', 'icon-btn', '<svg><use href="#i-convert"/></svg>');
+      go.title = 'Narrate this chapter';
+      go.style.color = 'var(--accent)';
+      go.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startConversion(book, [c]);
+      });
+      row.append(go);
     }
     host.append(row);
   });
 
   $('#btn-download-all').classList.toggle('hidden', !ready.length);
+}
+
+/** Pick an arbitrary subset of chapters to narrate now, with a live estimate. */
+async function pickChapters() {
+  const book = state.book;
+  if (state.conversion) return toast('A conversion is already running.');
+
+  const candidates = state.chapters.filter((c) => c.status !== 'ready');
+  if (!candidates.length) return;
+  const chosen = new Set(candidates.map((c) => c.id));
+
+  const provider = book.provider || state.settings.provider;
+  const model = modelOf(provider, book.model || state.settings.models[provider]);
+  const used = await getUsage(provider, model.id);
+
+  modal(`<h3>Choose chapters</h3>
+    <p class="small muted" style="margin:6px 0 0">Only what you tick is narrated. The rest stays in the book and you can come back to it any time.</p>
+    <div class="row" style="gap:8px;margin:14px 0 4px">
+      <button class="btn sm ghost" id="pk-all">All</button>
+      <button class="btn sm ghost" id="pk-none">None</button>
+    </div>
+    <div id="pk-list" style="max-height:38vh;overflow-y:auto;margin:6px -4px 0;padding:0 4px"></div>
+    <div id="pk-est" class="card" style="margin:14px 0"></div>
+    <div class="stack">
+      <button class="btn primary block" id="pk-go">Narrate selected</button>
+      <button class="btn ghost block" id="pk-cancel">Cancel</button>
+    </div>`);
+
+  const renderEstimate = () => {
+    const picked = candidates.filter((c) => chosen.has(c.id));
+    const chars = picked.reduce((n, c) => n + c.text.length, 0);
+    const est = estimate(chars, provider, model.id, used);
+    const mins = estimateMinutes(chars);
+    $('#pk-est').innerHTML = `
+      <div class="spread"><span class="small muted">Selected</span><b>${picked.length} of ${candidates.length}</b></div>
+      <div class="spread" style="margin-top:8px"><span class="small muted">Length</span><b>${
+        mins >= 60 ? (mins / 60).toFixed(1) + ' hours' : Math.round(mins) + ' min'
+      }</b></div>
+      <div class="spread" style="margin-top:8px"><span class="small muted">Cost</span>${
+        est.cost < 0.005 ? '<b style="color:var(--good)">Free</b>' : `<b>≈ $${est.cost.toFixed(2)}</b>`
+      }</div>
+      <div class="hint" style="margin-top:9px">${chars.toLocaleString()} characters${
+        est.allowance ? `, ${est.remaining.toLocaleString()} left in this month's free allowance` : ''
+      }.</div>`;
+    $('#pk-go').disabled = !picked.length;
+  };
+
+  const list = $('#pk-list');
+  candidates.forEach((c) => {
+    const row = el('div', 'chapter-edit');
+    const box = el('button', 'chk on', '✓');
+    box.addEventListener('click', () => {
+      chosen.has(c.id) ? chosen.delete(c.id) : chosen.add(c.id);
+      box.classList.toggle('on', chosen.has(c.id));
+      renderEstimate();
+    });
+    const label = el('div', 'grow truncate');
+    label.style.minWidth = '0';
+    label.innerHTML = `<div class="small" style="font-weight:550">${c.index + 1}. ${esc(c.title)}</div>`;
+    const meta = el('span', 'tiny muted', `${Math.round(estimateMinutes(c.text.length))}m`);
+    meta.style.flex = 'none';
+    row.append(box, label, meta);
+    list.append(row);
+  });
+
+  const setAll = (on) => {
+    chosen.clear();
+    if (on) candidates.forEach((c) => chosen.add(c.id));
+    list.querySelectorAll('.chk').forEach((b) => b.classList.toggle('on', on));
+    renderEstimate();
+  };
+  $('#pk-all').addEventListener('click', () => setAll(true));
+  $('#pk-none').addEventListener('click', () => setAll(false));
+  $('#pk-cancel').addEventListener('click', closeModal);
+  $('#pk-go').addEventListener('click', () => {
+    const picked = candidates.filter((c) => chosen.has(c.id));
+    closeModal();
+    if (picked.length) startConversion(book, picked);
+  });
+
+  renderEstimate();
 }
 
 /** "Aoede — Breezy, F · Chirp 3 HD · French (France)" */
@@ -842,10 +940,13 @@ async function saveAndConvert() {
     model: eng.model,
     voice: eng.voice,
     voiceLang: eng.lang,
-    chapterCount: included.length,
-    totalChars: included.reduce((n, c) => n + c.text.length, 0),
+    chapterCount: p.chapters.length,
+    totalChars: p.chapters.reduce((n, c) => n + c.text.length, 0),
   };
-  const chapters = included.map((c, i) => ({
+  // Every chapter is kept, so nothing is lost by unticking — the ticks only
+  // decide what gets narrated straight away. The rest can be done later from
+  // the book page.
+  const chapters = p.chapters.map((c, i) => ({
     id: `${id}:${i}`,
     bookId: id,
     index: i,
@@ -868,8 +969,9 @@ async function saveAndConvert() {
   state.book = book;
   state.chapters = chapters;
   show('book', { title: book.title });
-  renderBook();
-  startConversion(book, chapters);
+  await renderBook();
+  const queue = chapters.filter((_, i) => p.chapters[i].include);
+  startConversion(book, queue);
 }
 
 // ===========================================================================
@@ -1113,7 +1215,10 @@ function bindPlayer() {
   });
 
   player.addEventListener('failure', (e) => toast(e.detail.message, true));
-  player.addEventListener('finished', () => toast('End of the book.'));
+  player.addEventListener('finished', () => toast('End of what has been narrated.'));
+  player.addEventListener('skipped', (e) =>
+    toast(`Skipped ${e.detail.count} chapter${e.detail.count > 1 ? 's' : ''} that aren't narrated yet.`)
+  );
 }
 
 async function restoreLastSession() {
