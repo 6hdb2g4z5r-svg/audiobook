@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Lisan — Audiobooks</title>
+<meta name="description" content="Turn PDF and EPUB books into chaptered audiobooks you can download and listen to offline.">
+<meta name="theme-color" content="#0b0d12" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f6f4" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lisan">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-library" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 4h5a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-5a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h5z"/>
+  </symbol>
+  <symbol id="i-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 5v14M5 12h14"/>
+  </symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+  </symbol>
+  <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.53.85l12-7.5a1 1 0 0 0 0-1.7l-12-7.5A1 1 0 0 0 7 4.5z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4.2" height="16" rx="1.4"/><rect x="13.8" y="4" width="4.2" height="16" rx="1.4"/></symbol>
+  <symbol id="i-back15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 4 6 8l5 4"/><path d="M6 8h6a7 7 0 1 1-7 7"/><text x="12" y="19" font-size="7.5" font-weight="700" fill="currentColor" stroke="none" text-anchor="middle">15</text>
+  </symbol>
+  <symbol id="i-fwd30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m13 4 5 4-5 4"/><path d="M18 8h-6a7 7 0 1 0 7 7"/><text x="12" y="19" font-size="7.5" font-weight="700" fill="currentColor" stroke="none" text-anchor="middle">30</text>
+  </symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5a1 1 0 0 1 2 0v5.6l9.5-5.9A1 1 0 0 1 19 5.5v13a1 1 0 0 1-1.5.85L8 13.4V19a1 1 0 0 1-2 0z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24" fill="currentColor"><path d="M18 5a1 1 0 0 0-2 0v5.6L6.5 4.7A1 1 0 0 0 5 5.5v13a1 1 0 0 0 1.5.85L16 13.4V19a1 1 0 0 0 2 0z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
+  <symbol id="i-speed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="m13.5 10.5 4-4"/><path d="M4.2 18a9 9 0 1 1 15.6 0"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></symbol>
+  <symbol id="i-chevdown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+</svg>
+
+<div id="app">
+  <header class="topbar">
+    <button class="back hidden" id="btn-back" aria-label="Back"><svg><use href="#i-chev"/></svg>Back</button>
+    <h1 id="title">Library</h1>
+    <button class="action hidden" id="btn-action"></button>
+  </header>
+
+  <main>
+    <!-- ================= LIBRARY ================= -->
+    <section id="view-library" class="view active">
+      <div id="library-list"></div>
+    </section>
+
+    <!-- ================= BOOK ==================== -->
+    <section id="view-book" class="view">
+      <div id="book-head"></div>
+      <div id="book-convert"></div>
+      <div class="section-title">Chapters</div>
+      <div class="card" style="padding:4px 6px"><div id="book-chapters"></div></div>
+      <div class="stack" style="margin:20px 0 8px">
+        <button class="btn ghost block" id="btn-download-all"><svg style="width:18px;height:18px"><use href="#i-down"/></svg>Download all chapters (.zip)</button>
+        <button class="btn danger block" id="btn-delete-book">Remove book and its audio</button>
+      </div>
+    </section>
+
+    <!-- ================= IMPORT ================== -->
+    <section id="view-import" class="view">
+      <div id="import-step-pick">
+        <div class="drop" id="drop">
+          <div class="glyph">📖</div>
+          <h2 style="font-size:18px;margin-bottom:6px">Add a book</h2>
+          <p class="muted small" style="margin:0 0 18px">EPUB or PDF. On iPhone, choose <b>Browse</b> to pick from Files, iCloud Drive or Dropbox.</p>
+          <button class="btn primary" id="btn-pick">Choose a file</button>
+          <input type="file" id="file" accept=".epub,.pdf,application/epub+zip,application/pdf" hidden>
+        </div>
+        <div class="card small muted" style="margin-top:18px">
+          <b style="color:var(--text)">How it works</b>
+          <p style="margin:8px 0 0">Chapters are read straight from the book's own table of contents, then narrated one chapter at a time. Everything is stored on this device — the audio plays with no signal, on a plane, anywhere.</p>
+        </div>
+      </div>
+
+      <div id="import-step-parse" class="hidden">
+        <div class="card">
+          <div class="row"><div class="spinner"></div><div class="grow"><b id="parse-msg">Reading…</b><div class="bar" style="margin-top:9px"><i id="parse-bar" style="width:0%"></i></div></div></div>
+        </div>
+      </div>
+
+      <div id="import-step-review" class="hidden">
+        <div class="card">
+          <label class="field"><span>Title</span><input id="meta-title" type="text" autocapitalize="words"></label>
+          <label class="field"><span>Author</span><input id="meta-author" type="text" autocapitalize="words"></label>
+        </div>
+        <div class="spread" style="margin:22px 4px 6px">
+          <div class="section-title" style="margin:0">Chapters <span id="chapter-count" class="muted"></span></div>
+          <button class="btn sm ghost" id="btn-toggle-all">None</button>
+        </div>
+        <p class="hint" style="margin:0 4px 10px">Untick front matter, indexes or anything you would rather not hear. Tap a title to rename it.</p>
+        <div class="card" style="padding:6px 14px"><div id="review-list"></div></div>
+        <div class="card" id="estimate"></div>
+        <button class="btn primary block" id="btn-convert" style="margin-bottom:10px">Convert to audiobook</button>
+        <button class="btn ghost block" id="btn-cancel-import">Discard</button>
+      </div>
+    </section>
+
+    <!-- ================= SETTINGS ================= -->
+    <section id="view-settings" class="view">
+      <div class="section-title">Narration engine</div>
+      <div class="card">
+        <div class="segmented" id="provider-seg">
+          <button data-provider="google">Google Cloud</button>
+          <button data-provider="openai">OpenAI</button>
+        </div>
+        <div class="hint" id="provider-note" style="margin-top:10px"></div>
+        <label class="field">
+          <span>API key</span>
+          <input id="set-key" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+          <div class="hint" id="key-help"></div>
+        </label>
+        <div class="row" style="gap:10px">
+          <button class="btn sm ghost" id="btn-test-key">Test key</button>
+          <span id="key-status" class="small muted"></span>
+        </div>
+        <div id="allowance" class="hidden" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft)">
+          <div class="spread" style="margin-bottom:8px"><span class="small">Free allowance this month</span><span class="small muted" id="allowance-text">—</span></div>
+          <div class="bar"><i id="allowance-bar" style="width:0%"></i></div>
+          <div class="hint" id="allowance-note"></div>
+        </div>
+      </div>
+
+      <div class="section-title">Voice</div>
+      <div class="card">
+        <label class="field hidden" id="wrap-lang"><span>Language</span><select id="set-lang"></select>
+          <div class="hint">Pick the language your books are written in — it decides which narrators are offered.</div>
+        </label>
+        <label class="field"><span>Model</span><select id="set-model"></select><div class="hint" id="model-note"></div></label>
+        <label class="field"><span>Narrator</span><select id="set-voice"></select><div class="hint" id="voice-note"></div></label>
+        <label class="field" id="wrap-instructions">
+          <span>Style direction <span class="muted tiny">(optional)</span></span>
+          <textarea id="set-instructions" placeholder="Read calmly and clearly, like an audiobook narrator. Pause between paragraphs."></textarea>
+          <div class="hint">Only used by GPT-4o mini TTS. Useful for setting pace, accent or mood — and for telling it which language to read in.</div>
+        </label>
+        <div class="row" style="gap:10px">
+          <button class="btn sm ghost" id="btn-preview-voice">Preview voice</button>
+          <span id="preview-status" class="small muted"></span>
+        </div>
+      </div>
+
+      <div class="section-title">Conversion</div>
+      <div class="card">
+        <label class="field"><span>Parallel requests <span class="muted tiny" id="conc-val"></span></span>
+          <input id="set-conc" type="range" min="1" max="6" step="1" style="padding:0">
+          <div class="hint">Higher is faster but more likely to hit rate limits. Three is a safe default.</div>
+        </label>
+        <label class="field"><span>Narration speed <span class="muted tiny" id="tspeed-val"></span></span>
+          <input id="set-tspeed" type="range" min="0.7" max="1.3" step="0.05" style="padding:0">
+          <div class="hint">Baked into the audio file. Leave at 1.0 and use the playback speed control instead unless you want it permanent.</div>
+        </label>
+      </div>
+
+      <div class="section-title">Storage &amp; appearance</div>
+      <div class="card">
+        <div class="spread" style="margin-bottom:12px"><span class="small">Downloaded audio</span><span class="small muted" id="storage-usage">—</span></div>
+        <div class="bar"><i id="storage-bar" style="width:0%"></i></div>
+        <div class="hint" id="storage-note"></div>
+        <div class="field"><span>Theme</span>
+          <div class="segmented" id="theme-seg">
+            <button data-theme="auto" class="on">Auto</button><button data-theme="dark">Dark</button><button data-theme="light">Light</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card small muted" style="margin-bottom:32px">
+        <b style="color:var(--text)">Add to your Home Screen</b>
+        <p style="margin:8px 0 0">In Safari, tap the Share button, then <b>Add to Home Screen</b>. Lisan then opens full-screen, keeps playing with the screen off, and shows chapter controls on your lock screen.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= MINI PLAYER ================= -->
+  <div id="mini">
+    <img id="mini-art" class="cover" style="width:38px;height:38px;border-radius:8px" alt="">
+    <div class="grow" id="mini-open" style="min-width:0">
+      <div class="truncate" style="font-size:14.5px;font-weight:600" id="mini-title">—</div>
+      <div class="truncate tiny muted" id="mini-sub">—</div>
+    </div>
+    <button class="icon-btn" id="mini-back" aria-label="Back 15 seconds"><svg><use href="#i-back15"/></svg></button>
+    <button class="icon-btn" id="mini-play" aria-label="Play"><svg><use href="#i-play"/></svg></button>
+    <div class="mini-bar"><i id="mini-progress" style="width:0%"></i></div>
+  </div>
+
+  <!-- ================= TABS ================= -->
+  <nav class="tabbar">
+    <button data-view="library" class="active"><svg><use href="#i-library"/></svg>Library</button>
+    <button data-view="import"><svg><use href="#i-add"/></svg>Add book</button>
+    <button data-view="settings"><svg><use href="#i-settings"/></svg>Settings</button>
+  </nav>
+</div>
+
+<!-- ================= FULL PLAYER ================= -->
+<div class="sheet" id="player">
+  <div class="grabber"></div>
+  <div class="spread">
+    <button class="icon-btn" id="player-close" aria-label="Close player"><svg><use href="#i-chevdown"/></svg></button>
+    <div class="tiny muted truncate" id="player-book">—</div>
+    <button class="icon-btn" id="player-list" aria-label="Chapters"><svg><use href="#i-list"/></svg></button>
+  </div>
+  <img id="player-art" class="art" alt="">
+  <div class="now">
+    <h2 id="player-title">—</h2>
+    <p id="player-sub">—</p>
+  </div>
+  <input type="range" class="scrub" id="scrub" min="0" max="1000" value="0" aria-label="Seek">
+  <div class="times"><span id="t-now">0:00</span><span id="t-left">-0:00</span></div>
+  <div class="transport">
+    <button class="side" id="p-prev" aria-label="Previous chapter"><svg><use href="#i-prev"/></svg></button>
+    <button class="side" id="p-back" aria-label="Back 15 seconds"><svg><use href="#i-back15"/></svg></button>
+    <button class="play" id="p-play" aria-label="Play"><svg><use href="#i-play"/></svg></button>
+    <button class="side" id="p-fwd" aria-label="Forward 30 seconds"><svg><use href="#i-fwd30"/></svg></button>
+    <button class="side" id="p-next" aria-label="Next chapter"><svg><use href="#i-next"/></svg></button>
+  </div>
+  <div class="player-tools">
+    <button id="p-speed"><svg><use href="#i-speed"/></svg><span id="speed-label">1.0×</span></button>
+    <button id="p-sleep"><svg><use href="#i-moon"/></svg><span id="sleep-label">Sleep</span></button>
+    <button id="p-save"><svg><use href="#i-down"/></svg><span>Save MP3</span></button>
+  </div>
+</div>
+
+<div id="modal"><div class="panel" id="modal-panel"></div></div>
+<div id="toast"></div>
+
+<script src="vendor/jszip.min.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
